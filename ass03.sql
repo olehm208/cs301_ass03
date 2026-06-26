@@ -51,14 +51,13 @@ begin
 				from customers c 
 				where c.customer_id = p_customer_id) then
 		insert into orders(customer_id, total_amount, order_date)
-		values (p_customer_id, 0, current_timestamp)
+		values (p_customer_id, 0, current_timestamp);
 	else
 		-- Пан Володимир, я знаю, що тут будуть питання :-)
-		raise notice 'Customer with ID % doesn`t exist. Aborting.', p_customer_id
+		raise notice 'Customer with ID % doesn`t exist. Aborting.', p_customer_id;
 	end if;
 end;
 $$;
-end
 
 create or replace procedure add_product_to_order(
     p_order_id int,
@@ -99,3 +98,35 @@ create trigger trg_update_order_total
 after insert or delete or update on order_items
 for each row
 execute function trigger_update_order_total();
+
+create or replace function trigger_log_order()
+returns trigger as $$
+begin
+	insert into order_log(order_id, customer_id, action, log_date)
+	values(NEW.order_id, NEW.customer_id, 'INSERT', current_timestamp);
+
+	return null;
+end;
+$$ language plpgsql;
+
+create or replace trigger trg_log_order
+after insert on orders
+for each row
+execute function trigger_log_order();
+
+-- test
+insert into customers(full_name, email, balance)
+values ('John  Doe', 'example@abc.net', 100.00);
+
+insert into products(product_name, price, stock_quantity)
+values ('Laptop example', 250.00, 500);
+
+select * from customers c;
+select * from products p; 
+call create_order(1);
+select * from orders o;
+select * from order_log ol;
+call add_product_to_order(1,1,2);
+select * from products p where p.product_id = 1;
+select * from order_items oi where oi.order_id = 1;
+select * from orders o where o.order_id = 1;

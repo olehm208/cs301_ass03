@@ -34,3 +34,11 @@ create table order_log (
     action varchar(50),
     log_date timestamp default current_timestamp
 );
+
+create or replace function calculate_order_total(p_order_id int)
+returns int as $$
+	select 
+		coalesce(sum(quantity*price),0)
+	from order_items item
+	where item.order_id = p_order_id
+$$ language sql;

@@ -83,3 +83,19 @@ begin
 end;
 $$;
 end
+
+create or replace function trigger_update_order_total()
+returns trigger as $$
+begin
+	update orders
+	set total_amount = calculate_order_total(coalesce(NEW.order_id, OLD.order_id))
+	where order_id  = coalesce(NEW.order_id, OLD.order_id);
+
+	return null;
+end;
+$$ language plpgsql;
+
+create trigger trg_update_order_total
+after insert or delete or update on order_items
+for each row
+execute function trigger_update_order_total();

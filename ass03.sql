@@ -53,7 +53,32 @@ begin
 		insert into orders(customer_id, total_amount, order_date)
 		values (p_customer_id, 0, current_timestamp)
 	else
+		-- Пан Володимир, я знаю, що тут будуть питання :-)
 		raise notice 'Customer with ID % doesn`t exist. Aborting.', p_customer_id
+	end if;
+end;
+$$;
+end
+
+create or replace procedure add_product_to_order(
+    p_order_id int,
+    p_product_id int,
+    p_quantity int
+)
+language plpgsql
+as $$
+begin
+	update products
+	set stock_quantity = stock_quantity - p_quantity
+	where product_id = p_product_id
+	and p_quantity > 0
+	and stock_quantity >= p_quantity;
+	-- перевіряє чи минулий запит взагалі пройшов
+	if found then
+		insert into order_items (order_id, product_id, quantity, price)
+		select p_order_id, p_product_id, p_quantity, price
+		from products
+		where product_id = p_product_id;
 	end if;
 end;
 $$;

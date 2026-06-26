@@ -42,3 +42,19 @@ returns int as $$
 	from order_items item
 	where item.order_id = p_order_id
 $$ language sql;
+
+create or replace procedure create_order(p_customer_id int)
+language plpgsql
+as $$
+begin
+	if exists(select 1 
+				from customers c 
+				where c.customer_id = p_customer_id) then
+		insert into orders(customer_id, total_amount, order_date)
+		values (p_customer_id, 0, current_timestamp)
+	else
+		raise notice 'Customer with ID % doesn`t exist. Aborting.', p_customer_id
+	end if;
+end;
+$$;
+end
